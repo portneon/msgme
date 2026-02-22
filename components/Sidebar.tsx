@@ -13,20 +13,31 @@ import {
     Tooltip,
     IconButton,
     Badge,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogContentText,
+    DialogActions,
+    Button,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
+import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import PersonAddRoundedIcon from "@mui/icons-material/PersonAddRounded";
 import { useUser } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
+import AddMemberDialog from "./AddMemberDialog";
 import type { Id } from "../convex/_generated/dataModel";
+import { useState } from "react";
 
 interface SidebarProps {
     currentUserId: Id<"users">;
     activeConversationId: Id<"conversations"> | null;
     onSelectConversation: (id: Id<"conversations">) => void;
     onOpenSearch: () => void;
+    activeWorkspaceId: Id<"workspaces"> | null;
 }
 
 function formatTimestamp(ts?: number) {
@@ -36,13 +47,15 @@ function formatTimestamp(ts?: number) {
     const isToday = d.toDateString() === now.toDateString();
     const isThisYear = d.getFullYear() === now.getFullYear();
 
+    const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
     if (isToday) {
-        return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        return time;
     }
     if (isThisYear) {
-        return d.toLocaleDateString([], { month: "short", day: "numeric" });
+        return `${d.toLocaleDateString([], { month: "short", day: "numeric" })}, ${time}`;
     }
-    return d.toLocaleDateString([], { month: "short", day: "numeric", year: "2-digit" });
+    return `${d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}, ${time}`;
 }
 
 export default function Sidebar({
@@ -50,9 +63,34 @@ export default function Sidebar({
     activeConversationId,
     onSelectConversation,
     onOpenSearch,
+    activeWorkspaceId,
 }: SidebarProps) {
     const { user } = useUser();
-    const conversations = useQuery(api.conversations.getMyConversations);
+    const conversations = useQuery(
+        api.conversations.getMyConversations,
+        activeWorkspaceId ? { workspaceId: activeWorkspaceId } : "skip"
+    );
+    const clearConversation = useMutation(api.conversations.clearConversation);
+
+    const [inviteOpen, setInviteOpen] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [convToDelete, setConvToDelete] = useState<Id<"conversations"> | null>(null);
+
+    const handleDeleteClick = (e: React.MouseEvent, id: Id<"conversations">) => {
+        e.stopPropagation();
+        setConvToDelete(id);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (convToDelete) {
+            await clearConversation({ conversationId: convToDelete });
+            setDeleteDialogOpen(false);
+            setConvToDelete(null);
+            // If the active conversation was deleted, we might want to tell the parent to clear selection
+            // but for now getMyConversations will filter it out.
+        }
+    };
 
     return (
         <Box
@@ -97,15 +135,31 @@ export default function Sidebar({
                         {user?.username ?? user?.firstName ?? "You"}
                     </Typography>
                 </Box>
-                <Tooltip title="New conversation">
-                    <IconButton
-                        onClick={onOpenSearch}
-                        size="small"
-                        sx={{ bgcolor: "primary.main", color: "#fff", "&:hover": { bgcolor: "primary.dark" } }}
-                    >
-                        <AddIcon fontSize="small" />
-                    </IconButton>
-                </Tooltip>
+                <Box sx={{ display: "flex", gap: 0.5 }}>
+                    <Tooltip title="Invite to Bundle">
+                        <IconButton
+                            onClick={() => setInviteOpen(true)}
+                            size="small"
+                            sx={{ color: "text.secondary", "&:hover": { color: "primary.main" } }}
+                        >
+                            <PersonAddRoundedIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="New conversation">
+                        <IconButton
+                            onClick={onOpenSearch}
+                            size="small"
+                            sx={{ bgcolor: "primary.main", color: "#fff", "&:hover": { bgcolor: "primary.dark" } }}
+                        >
+                            <AddIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+                <AddMemberDialog
+                    open={inviteOpen}
+                    onClose={() => setInviteOpen(false)}
+                    workspaceId={activeWorkspaceId}
+                />
             </Box>
 
             {/* Search bar (opens dialog) */}
@@ -175,6 +229,7 @@ export default function Sidebar({
                                     bgcolor: "rgba(108,71,255,0.12)",
                                     "&:hover": { bgcolor: "rgba(108,71,255,0.18)" },
                                 },
+                                "&:hover .delete-chat": { opacity: 1 },
                             }}
                         >
                             <ListItemAvatar>
@@ -198,27 +253,21 @@ export default function Sidebar({
                                 </Box>
                             </ListItemAvatar>
                             <ListItemText
-                                primary={
-                                    <Typography variant="body1" fontWeight={unread > 0 ? 700 : 600} noWrap>
-                                        {conv.otherUser?.username ?? "Unknown"}
-                                    </Typography>
-                                }
-                                secondary={
-                                    <Typography
-                                        variant="body2"
-                                        color={unread > 0 ? "text.primary" : "text.secondary"}
-                                        fontWeight={unread > 0 ? 600 : 400}
-                                        noWrap
-                                    >
-                                        {conv.lastMessage?.content ?? "No messages yet"}
-                                    </Typography>
-                                }
+                                primary={`${conv.otherUser?.username ?? "Unknown"}${conv.otherUser?._id === currentUserId ? " (You)" : ""}`}
+                                primaryTypographyProps={{ variant: "body1", fontWeight: unread > 0 ? 700 : 600, noWrap: true }}
+                                secondary={conv.lastMessage?.content ?? "No messages yet"}
+                                secondaryTypographyProps={{
+                                    variant: "body2",
+                                    color: unread > 0 ? "text.primary" : "text.secondary",
+                                    fontWeight: unread > 0 ? 600 : 400,
+                                    noWrap: true
+                                }}
                             />
                             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 0.5, ml: 1 }}>
                                 <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: "nowrap" }}>
                                     {formatTimestamp(conv.lastMessage?._creationTime)}
                                 </Typography>
-                                {unread > 0 && !isActive && (
+                                {unread > 0 && !isActive ? (
                                     <Badge
                                         badgeContent={unread > 99 ? "99+" : unread}
                                         color="primary"
@@ -233,12 +282,59 @@ export default function Sidebar({
                                             },
                                         }}
                                     />
+                                ) : (
+                                    <IconButton
+                                        className="delete-chat"
+                                        size="small"
+                                        onClick={(e) => handleDeleteClick(e, conv._id)}
+                                        sx={{
+                                            opacity: 0,
+                                            transition: "opacity 0.2s",
+                                            color: "text.secondary",
+                                            "&:hover": { color: "error.main" },
+                                        }}
+                                    >
+                                        <DeleteRoundedIcon fontSize="inherit" />
+                                    </IconButton>
                                 )}
                             </Box>
                         </ListItemButton>
                     );
                 })}
             </List>
+
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+                PaperProps={{
+                    sx: {
+                        bgcolor: "background.paper",
+                        backgroundImage: "none",
+                        borderRadius: 3,
+                        boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+                    },
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 700 }}>Delete Chat?</DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{ color: "text.secondary" }}>
+                        Are you sure you want to delete this conversation? Your message could be lost.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ p: 2, gap: 1 }}>
+                    <Button onClick={() => setDeleteDialogOpen(false)} sx={{ color: "text.secondary" }}>
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleConfirmDelete}
+                        variant="contained"
+                        color="error"
+                        sx={{ borderRadius: 2 }}
+                    >
+                        Delete Chat
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

@@ -54,10 +54,9 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
         const el = scrollContainerRef.current;
         if (!el) return;
         const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-        isAtBottomRef.current = distFromBottom < 80;
-        if (isAtBottomRef.current) {
-            setShowNewMsgButton(false);
-        }
+        const isAtBottom = distFromBottom < 100;
+        isAtBottomRef.current = isAtBottom;
+        setShowNewMsgButton(!isAtBottom);
     }, []);
 
     // When new messages arrive
@@ -90,8 +89,8 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
         markAsRead({ conversationId }).catch(() => { });
     }
 
-    async function handleSend(content: string) {
-        await sendMessage({ conversationId, content, type: "text" });
+    async function handleSend(content: string, type: "text" | "image" | "file" = "text", storageId?: Id<"_storage">) {
+        await sendMessage({ conversationId, content, type, storageId });
         // Scroll to bottom on send
         setTimeout(() => {
             bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -103,7 +102,7 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
         const now = new Date();
         const isToday = d.toDateString() === now.toDateString();
         const isThisYear = d.getFullYear() === now.getFullYear();
-        const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
         if (isToday) return time;
         if (isThisYear) {
@@ -161,6 +160,7 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
                     <Box>
                         <Typography variant="subtitle1" fontWeight={700}>
                             {otherUser?.username ?? "Loading…"}
+                            {otherUser?._id === currentUserId && " (You)"}
                         </Typography>
                         <Typography variant="caption" color={otherUser?.isOnline ? "#22c55e" : "text.secondary"}>
                             {otherUser?.isOnline ? "Online" : "Offline"}
@@ -219,14 +219,18 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
                                     </Box>
                                 )}
                                 <MessageBubble
+                                    messageId={msg._id}
                                     content={msg.content}
                                     senderId={msg.senderId}
                                     senderImageUrl={msg.sender?.imageUrl ?? undefined}
-                                    senderUsername={msg.sender?.username}
+                                    senderUsername={msg.sender?.username ?? undefined}
                                     currentUserId={currentUserId}
                                     createdAt={msg._creationTime}
                                     isEdited={msg.isEdited}
+                                    deletedAt={msg.deletedAt}
+                                    isRead={msg.isRead}
                                     type={msg.type as "text" | "image" | "file"}
+                                    isSelfChat={otherUser?._id === currentUserId}
                                     formatTimestamp={formatTimestamp}
                                 />
                             </Box>
@@ -241,32 +245,27 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
                     <div ref={bottomRef} />
                 </Box>
 
-                {/* ↓ New messages floating button */}
+                {/* ↓ Scroll to bottom button */}
                 {showNewMsgButton && (
                     <Box
                         sx={{
                             position: "absolute",
                             bottom: 16,
-                            left: "50%",
-                            transform: "translateX(-50%)",
+                            right: 16,
                             zIndex: 10,
                         }}
                     >
                         <Fab
-                            variant="extended"
                             size="small"
                             color="primary"
                             onClick={scrollToBottom}
                             sx={{
-                                fontSize: 12,
-                                fontWeight: 700,
-                                px: 2,
-                                gap: 0.5,
-                                boxShadow: "0 4px 16px rgba(108,71,255,0.5)",
+                                width: 40,
+                                height: 40,
+                                boxShadow: "0 4px 16px rgba(108,71,255,0.4)",
                             }}
                         >
-                            <KeyboardArrowDownIcon fontSize="small" />
-                            New messages
+                            <KeyboardArrowDownIcon />
                         </Fab>
                     </Box>
                 )}

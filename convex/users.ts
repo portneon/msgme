@@ -48,16 +48,35 @@ export const upsertUser = mutation({
                 imageUrl: args.imageUrl,
                 isOnline: true,
             });
-            return existing._id;
         }
 
-        return await ctx.db.insert("users", {
+        const userId = existing ? existing._id : await ctx.db.insert("users", {
             clerkId: identity.subject,
             username: args.username,
             email: args.email,
             imageUrl: args.imageUrl,
             isOnline: true,
         });
+
+        // Ensure user has at least one workspace
+        const memberships = await ctx.db
+            .query("workspaceMembers")
+            .withIndex("by_userId", (q) => q.eq("userId", userId))
+            .collect();
+
+        if (memberships.length === 0) {
+            const workspaceId = await ctx.db.insert("workspaces", {
+                name: "Personal",
+                adminId: userId,
+            });
+            await ctx.db.insert("workspaceMembers", {
+                workspaceId,
+                userId,
+                role: "admin",
+            });
+        }
+
+        return userId;
     },
 });
 

@@ -62,8 +62,8 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user]);
 
-  // Wait for Clerk to finish loading (SSR safe)
-  if (!mounted || !isLoaded) {
+  // Wait for mounting and Clerk loading
+  if (!mounted || !isLoaded || convexLoading) {
     return (
       <Box sx={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "#0f0f10" }}>
         <CircularProgress sx={{ color: "#6c47ff" }} />

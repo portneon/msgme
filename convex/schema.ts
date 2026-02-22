@@ -15,12 +15,33 @@ export default defineSchema({
 
     // A direct message conversation between exactly two users
     conversations: defineTable({
+        workspaceId: v.optional(v.id("workspaces")),
         participant1: v.id("users"),
         participant2: v.id("users"),
         lastMessageId: v.optional(v.id("messages")),
+        hiddenFor: v.optional(v.array(v.id("users"))),
     })
+        .index("by_workspaceId", ["workspaceId"])
         .index("by_participant1", ["participant1"])
         .index("by_participant2", ["participant2"]),
+
+    // Groups of users and conversations
+    workspaces: defineTable({
+        name: v.string(),
+        adminId: v.id("users"),
+        imageUrl: v.optional(v.string()),
+    })
+        .index("by_adminId", ["adminId"]),
+
+    // Membership in a workspace
+    workspaceMembers: defineTable({
+        workspaceId: v.id("workspaces"),
+        userId: v.id("users"),
+        role: v.union(v.literal("admin"), v.literal("member")),
+    })
+        .index("by_workspaceId", ["workspaceId"])
+        .index("by_userId", ["userId"])
+        .index("by_workspace_user", ["workspaceId", "userId"]),
 
     // Messages sent in a conversation
     messages: defineTable({
@@ -33,7 +54,8 @@ export default defineSchema({
             v.literal("file")
         ),
         isEdited: v.boolean(),
-        deletedAt: v.optional(v.number()), // Soft delete timestamp
+        deletedAt: v.optional(v.number()), // Soft delete for everyone
+        deletedFor: v.optional(v.array(v.id("users"))), // Hidden for specific users
     })
         .index("by_conversationId", ["conversationId"])
         .index("by_senderId", ["senderId"]),

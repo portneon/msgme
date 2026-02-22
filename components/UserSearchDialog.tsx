@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Dialog, DialogTitle, DialogContent,
     TextField, InputAdornment, List, ListItemButton,
@@ -16,30 +16,54 @@ interface UserSearchDialogProps {
     open: boolean;
     onClose: () => void;
     onConversationCreated: (id: Id<"conversations">) => void;
+    activeWorkspaceId: Id<"workspaces"> | null;
+    currentUserId: Id<"users">;
 }
 
 export default function UserSearchDialog({
     open,
     onClose,
     onConversationCreated,
+    activeWorkspaceId,
+    currentUserId,
 }: UserSearchDialogProps) {
+    const [isMounted, setIsMounted] = useState(false);
     const [search, setSearch] = useState("");
-    // getAllUsers now uses ctx.auth — no currentClerkId arg
-    const users = useQuery(api.users.getAllUsers);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     const getOrCreate = useMutation(api.conversations.getOrCreateConversation);
 
+    // In a workspace, only search for people already in that workspace
+    const workspaceUsers = useQuery(
+        api.workspaces.getWorkspaceMembers,
+        activeWorkspaceId ? { workspaceId: activeWorkspaceId } : "skip"
+    );
+
+    // If not in a workspace (which shouldn't happen now), fallback to all
+    const allUsers = useQuery(api.users.getAllUsers);
+
+    const users = activeWorkspaceId ? workspaceUsers : allUsers;
+
     const filtered = users?.filter((u) =>
-        u.username.toLowerCase().includes(search.toLowerCase()) ||
-        u.email.toLowerCase().includes(search.toLowerCase())
+        u._id !== currentUserId && (
+            u.username.toLowerCase().includes(search.toLowerCase()) ||
+            u.email.toLowerCase().includes(search.toLowerCase())
+        )
     );
 
     async function handleSelect(otherUserId: Id<"users">) {
+        if (!activeWorkspaceId) return;
         // getOrCreateConversation no longer needs myUserId from client
-        const convId = await getOrCreate({ otherUserId });
+        const convId = await getOrCreate({ otherUserId, workspaceId: activeWorkspaceId });
         onConversationCreated(convId);
         onClose();
         setSearch("");
     }
+
+    if (!isMounted) return null;
 
     return (
         <Dialog
@@ -82,8 +106,10 @@ export default function UserSearchDialog({
                                 </Avatar>
                             </ListItemAvatar>
                             <ListItemText
-                                primary={<Typography fontWeight={600}>{user.username}</Typography>}
-                                secondary={<Typography variant="caption" color="text.secondary">{user.email}</Typography>}
+                                primary={user.username}
+                                primaryTypographyProps={{ fontWeight: 600 }}
+                                secondary={user.email}
+                                secondaryTypographyProps={{ variant: "caption", color: "text.secondary" }}
                             />
                             {user.isOnline && (
                                 <Box sx={{ width: 8, height: 8, bgcolor: "#22c55e", borderRadius: "50%", ml: 1 }} />
