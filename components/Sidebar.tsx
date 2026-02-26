@@ -31,8 +31,6 @@ import AddIcon from "@mui/icons-material/Add";
 import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import PersonAddRoundedIcon from "@mui/icons-material/PersonAddRounded";
-import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
-import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import { useUser } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
@@ -40,7 +38,6 @@ import AddMemberDialog from "./AddMemberDialog";
 import AddToBundleDialog from "./AddToBundleDialog";
 import type { Id } from "../convex/_generated/dataModel";
 import { useState } from "react";
-import { useThemeContext } from "../lib/ThemeContext";
 
 interface SidebarProps {
     currentUserId: Id<"users">;
@@ -85,7 +82,6 @@ export default function Sidebar({
 
     const clearConversation = useMutation(api.conversations.clearConversation);
     const removeMemberById = useMutation(api.workspaces.removeMemberById);
-    const { mode, toggleColorMode } = useThemeContext();
 
     const [inviteOpen, setInviteOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -207,15 +203,6 @@ export default function Sidebar({
                             sx={{ bgcolor: "primary.main", color: "primary.contrastText", "&:hover": { bgcolor: "action.hover", color: "text.primary" } }}
                         >
                             <AddIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
-                    <Tooltip title={mode === "dark" ? "Light Mode" : "Dark Mode"}>
-                        <IconButton
-                            onClick={toggleColorMode}
-                            size="small"
-                            sx={{ color: "text.secondary", "&:hover": { color: "primary.main" } }}
-                        >
-                            {mode === "dark" ? <LightModeOutlinedIcon fontSize="small" /> : <DarkModeOutlinedIcon fontSize="small" />}
                         </IconButton>
                     </Tooltip>
                 </Box>
