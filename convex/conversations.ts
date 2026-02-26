@@ -147,11 +147,29 @@ export const getOrCreateConversation = mutation({
 
         const existing = asP1 || asP2;
 
+        const ensureInAtLeastOneWorkspace = async (ownerId: typeof me._id, userId: typeof args.otherUserId) => {
+            const ownerWorkspaces = await ctx.db.query("workspaces").withIndex("by_adminId", q => q.eq("adminId", ownerId)).collect();
+            let found = false;
+            for (const ws of ownerWorkspaces) {
+                const member = await ctx.db.query("workspaceMembers").withIndex("by_workspace_user", q => q.eq("workspaceId", ws._id).eq("userId", userId)).unique();
+                if (member) { found = true; break; }
+            }
+            // If they aren't in any workspace, add them to the first one (Default/Personal)
+            if (!found && ownerWorkspaces.length > 0) {
+                await ctx.db.insert("workspaceMembers", { workspaceId: ownerWorkspaces[0]._id, userId: userId, role: "member" });
+            }
+        };
+
+        // When a chat starts, ensure both can see each other in their default bundles
+        await ensureInAtLeastOneWorkspace(me._id, args.otherUserId);
+        await ensureInAtLeastOneWorkspace(args.otherUserId, me._id);
+
         if (existing) {
-            // If it was hidden for "me", unhide it
-            if (existing.hiddenFor?.includes(me._id)) {
+            // If it was hidden for either user, unhide it for them
+            const hiddenFor = existing.hiddenFor ?? [];
+            if (hiddenFor.includes(me._id) || hiddenFor.includes(args.otherUserId)) {
                 await ctx.db.patch(existing._id, {
-                    hiddenFor: existing.hiddenFor.filter(id => id !== me._id)
+                    hiddenFor: hiddenFor.filter(id => id !== me._id && id !== args.otherUserId)
                 });
             }
             return existing._id;
@@ -203,4 +221,25 @@ export const clearConversation = mutation({
             }
         }
     },
+});
+export const getConversation = query({
+    args: { conversationId: v.id("conversations") },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) return null;
+
+        const me = await ctx.db
+            .query("users")
+            .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+            .unique();
+        if (!me) return null;
+
+        const conv = await ctx.db.get(args.conversationId);
+        if (!conv) return null;
+
+        const otherId = conv.participant1 === me._id ? conv.participant2 : conv.participant1;
+        const otherUser = await ctx.db.get(otherId);
+
+        return { ...conv, otherUser };
+    }
 });

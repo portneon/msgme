@@ -12,16 +12,14 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [upsertDone, setUpsertDone] = useState(false);
 
-  // Clerk: source of truth for "is the user signed in"
   const { user, isLoaded, isSignedIn } = useUser();
   const { redirectToSignIn } = useClerk();
 
-  // Convex: source of truth for "can we make authenticated Convex calls"
+ 
   const { isAuthenticated, isLoading: convexLoading } = useConvexAuth();
   const upsertUser = useMutation(api.users.upsertUser);
   const setOffline = useMutation(api.users.setOffline);
 
-  // Query current user from Convex (only when Convex auth is ready)
   const currentUser = useQuery(
     api.users.getCurrentUser,
     isAuthenticated ? {} : "skip"
@@ -29,7 +27,7 @@ export default function Home() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Mark user offline when the tab closes
+
   useEffect(() => {
     if (!isAuthenticated) return;
     const handleUnload = () => {
@@ -37,11 +35,10 @@ export default function Home() {
     };
     window.addEventListener("beforeunload", handleUnload);
     return () => window.removeEventListener("beforeunload", handleUnload);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [isAuthenticated]);
 
 
-  // Upsert user to Convex once Convex auth is confirmed
   useEffect(() => {
     if (!isAuthenticated || !user || upsertDone) return;
     const username =
@@ -59,7 +56,6 @@ export default function Home() {
         console.error("upsertUser failed:", err);
         setUpsertDone(true);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user]);
 
   // Wait for mounting and Clerk loading

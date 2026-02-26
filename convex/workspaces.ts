@@ -65,7 +65,7 @@ export const addMember = mutation({
         const userToAdd = await ctx.db
             .query("users")
             .withIndex("by_email", (q) => q.eq("email", args.email))
-            .unique();
+            .first();
         if (!userToAdd) throw new Error("User with this email not found");
 
         // Check if already a member

@@ -31,16 +31,14 @@ export default function AddToBundleDialog({ open, onClose, userIdToAdd, currentW
 
     const [loading, setLoading] = useState(false);
 
-    // Filter workspaces to only those the current user admins (which is what getMyWorkspaces returns now)
-    // Let's also order or style the currentWorkspace if it exists, though they might already be in it
-
-    // For simplicity, we just list all user-owned workspaces to add them to.
 
     const handleSelectWorkspace = async (workspaceId: Id<"workspaces">) => {
         if (!userIdToAdd) return;
         setLoading(true);
         try {
             await addMemberById({ workspaceId, userId: userIdToAdd });
+            alert('member added Suceesfully')
+
             onClose();
         } catch (error) {
             console.error("Failed to add member to bundle", error);

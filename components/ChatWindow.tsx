@@ -33,9 +33,8 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
     const markAsRead = useMutation(api.messages.markAsRead);
     const typingUsers = useQuery(api.typing.getTypingUsers, { conversationId });
 
-    // Get the other user from conversation list
-    const conversations = useQuery(api.conversations.getMyConversations, {});
-    const conv = conversations?.find((c) => c._id === conversationId);
+    // Get the other user directly for this specific conversation
+    const conv = useQuery(api.conversations.getConversation, { conversationId });
     const otherUser = conv?.otherUser;
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);

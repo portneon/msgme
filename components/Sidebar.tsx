@@ -168,7 +168,6 @@ export default function Sidebar({
                         >
                             {activeWorkspace ? activeWorkspace.name[0]?.toUpperCase() : "..."}
                         </Avatar>
-                        {/* Online indicator for self */}
                         <Box
                             sx={{
                                 position: "absolute", bottom: 0, right: 0,

@@ -115,7 +115,7 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
         });
     }, [mode]);
 
-    // Prevent hydration mismatch by rendering a placeholder or standard till mounted
+  
     if (!mounted) {
         return <div style={{ visibility: "hidden" }}>{children}</div>;
     }
