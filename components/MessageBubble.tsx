@@ -134,8 +134,8 @@ export default function MessageBubble({
                             opacity: 0,
                             transition: "opacity 0.2s",
                             color: "text.secondary",
-                            bgcolor: "rgba(255,255,255,0.05)",
-                            "&:hover": { bgcolor: "rgba(255,255,255,0.1)" },
+                            bgcolor: "action.hover",
+                            "&:hover": { bgcolor: "action.selected" },
                         }}
                     >
                         <MoreVertIcon fontSize="inherit" />
@@ -148,11 +148,12 @@ export default function MessageBubble({
                         px: 2,
                         py: 1.2,
                         borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                        bgcolor: deletedAt ? "rgba(255,255,255,0.05)" : (isMine ? "primary.main" : "background.paper"),
+                        bgcolor: deletedAt ? "transparent" : (isMine ? "primary.main" : "background.paper"),
                         boxShadow: deletedAt ? "none" : (isMine
-                            ? "0 2px 12px rgba(108,71,255,0.35)"
-                            : "0 2px 8px rgba(0,0,0,0.3)"),
-                        border: deletedAt ? "1px dashed rgba(255,255,255,0.2)" : "none",
+                            ? "0 2px 12px rgba(0,0,0,0.1)"
+                            : "0 2px 8px rgba(0,0,0,0.1)"),
+                        border: deletedAt ? "1px dashed" : "none",
+                        borderColor: "divider",
                         wordBreak: "break-word",
                     }}
                 >
@@ -166,15 +167,15 @@ export default function MessageBubble({
                                 onChange={(e) => setEditValue(e.target.value)}
                                 autoFocus
                                 sx={{
-                                    "& .MuiInputBase-root": { color: "#fff", fontSize: "0.875rem" },
-                                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.3)" },
+                                    "& .MuiInputBase-root": { color: "primary.contrastText", fontSize: "0.875rem" },
+                                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "divider" },
                                 }}
                             />
                             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-                                <IconButton size="small" onClick={handleEditCancel} sx={{ color: "rgba(255,255,255,0.7)" }}>
+                                <IconButton size="small" onClick={handleEditCancel} sx={{ color: "primary.contrastText", opacity: 0.7 }}>
                                     <CloseRoundedIcon fontSize="small" />
                                 </IconButton>
-                                <IconButton size="small" onClick={handleEditSave} sx={{ color: "#fff" }}>
+                                <IconButton size="small" onClick={handleEditSave} sx={{ color: "primary.contrastText" }}>
                                     <CheckRoundedIcon fontSize="small" />
                                 </IconButton>
                             </Box>
@@ -202,7 +203,7 @@ export default function MessageBubble({
                                 alignItems: "center",
                                 gap: 1,
                                 textDecoration: "none",
-                                color: isMine ? "#fff" : "primary.main"
+                                color: isMine ? "primary.contrastText" : "primary.main"
                             }}
                         >
                             <InsertDriveFileRoundedIcon />
@@ -211,7 +212,7 @@ export default function MessageBubble({
                             </Typography>
                         </Link>
                     ) : (
-                        <Typography variant="body1" sx={{ color: isMine ? "#fff" : "text.primary", lineHeight: 1.5 }}>
+                        <Typography variant="body1" sx={{ color: isMine ? "primary.contrastText" : "text.primary", lineHeight: 1.5 }}>
                             {content}
                         </Typography>
                     )}

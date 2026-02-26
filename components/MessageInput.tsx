@@ -158,13 +158,13 @@ export default function MessageInput({ onSend, disabled, conversationId }: Messa
                     disabled={disabled || isUploading || !text.trim()}
                     sx={{
                         bgcolor: "primary.main",
-                        color: "#fff",
+                        color: "primary.contrastText",
                         mb: 0.5,
                         width: 38,
                         height: 38,
                         flexShrink: 0,
-                        "&:hover": { bgcolor: "primary.dark" },
-                        "&.Mui-disabled": { bgcolor: "rgba(108,71,255,0.3)", color: "rgba(255,255,255,0.4)" },
+                        "&:hover": { bgcolor: "action.hover", color: "text.primary" },
+                        "&.Mui-disabled": { bgcolor: "action.disabledBackground", color: "action.disabled" },
                     }}
                 >
                     <SendRoundedIcon fontSize="small" />

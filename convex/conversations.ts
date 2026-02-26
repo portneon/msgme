@@ -24,13 +24,43 @@ export const getMyConversations = query({
             .withIndex("by_participant2", (q) => q.eq("participant2", me._id))
             .collect();
 
-        // Filter by workspaceId: 
-        // 1. If args.workspaceId is provided, show only those matches or legacy chats
+        let allowedOtherUserIds: Set<string> | null = null;
+        let forbiddenOtherUserIds: Set<string> | null = null;
+
+        if (args.workspaceId) {
+            const members = await ctx.db
+                .query("workspaceMembers")
+                .withIndex("by_workspaceId", (q) => q.eq("workspaceId", args.workspaceId!))
+                .collect();
+            allowedOtherUserIds = new Set(members.map(m => m.userId));
+        } else {
+            const workspaces = await ctx.db
+                .query("workspaces")
+                .withIndex("by_adminId", (q) => q.eq("adminId", me._id))
+                .collect();
+
+            const allMemberships = await Promise.all(
+                workspaces.map(w =>
+                    ctx.db.query("workspaceMembers")
+                        .withIndex("by_workspaceId", (q) => q.eq("workspaceId", w._id))
+                        .collect()
+                )
+            );
+
+            forbiddenOtherUserIds = new Set(allMemberships.flat().map(m => m.userId));
+        }
+
         const all = [...asP1, ...asP2]
             .filter(c => !c.hiddenFor?.includes(me._id))
             .filter(c => {
-                if (!args.workspaceId) return true;
-                return c.workspaceId === args.workspaceId || !c.workspaceId;
+                const otherId = c.participant1 === me._id ? c.participant2 : c.participant1;
+                if (allowedOtherUserIds) {
+                    return allowedOtherUserIds.has(otherId);
+                }
+                if (forbiddenOtherUserIds) {
+                    return !forbiddenOtherUserIds.has(otherId);
+                }
+                return true;
             });
 
         const enriched = await Promise.all(
@@ -92,7 +122,7 @@ export const getMyConversations = query({
 
 // Find or create a DM between the authenticated user and another user
 export const getOrCreateConversation = mutation({
-    args: { otherUserId: v.id("users"), workspaceId: v.id("workspaces") },
+    args: { otherUserId: v.id("users") },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
         if (!identity) throw new Error("Not authenticated");
@@ -118,11 +148,6 @@ export const getOrCreateConversation = mutation({
         const existing = asP1 || asP2;
 
         if (existing) {
-            // Update workspaceId if it's missing (legacy chat being moved)
-            if (!existing.workspaceId) {
-                await ctx.db.patch(existing._id, { workspaceId: args.workspaceId });
-            }
-
             // If it was hidden for "me", unhide it
             if (existing.hiddenFor?.includes(me._id)) {
                 await ctx.db.patch(existing._id, {
@@ -133,7 +158,6 @@ export const getOrCreateConversation = mutation({
         }
 
         return await ctx.db.insert("conversations", {
-            workspaceId: args.workspaceId,
             participant1: me._id,
             participant2: args.otherUserId,
         });

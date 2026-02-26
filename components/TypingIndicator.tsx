@@ -43,8 +43,7 @@ export default function TypingIndicator({ typingUsers }: TypingIndicatorProps) {
                     bgcolor: "background.paper",
                     px: 1.5,
                     py: 1,
-                    borderRadius: "18px 18px 18px 4px",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                 }}
             >
                 {[0, 1, 2].map((i) => (

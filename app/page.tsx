@@ -66,7 +66,7 @@ export default function Home() {
   if (!mounted || !isLoaded || convexLoading) {
     return (
       <Box sx={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "#0f0f10" }}>
-        <CircularProgress sx={{ color: "#6c47ff" }} />
+        <CircularProgress sx={{ color: "primary.main" }} />
       </Box>
     );
   }
@@ -92,9 +92,10 @@ export default function Home() {
             py: 1.5,
             fontWeight: 700,
             fontSize: 16,
-            background: "linear-gradient(135deg, #6c47ff 0%, #9b7fff 100%)",
-            boxShadow: "0 4px 20px rgba(108,71,255,0.4)",
-            "&:hover": { background: "linear-gradient(135deg, #5535e0 0%, #8a6ef0 100%)" },
+            background: "primary.main",
+            color: "primary.contrastText",
+            boxShadow: 3,
+            "&:hover": { bgcolor: "action.hover", color: "text.primary" },
           }}
         >
           Sign In

@@ -1,14 +1,14 @@
 "use client";
 
-import { ThemeProvider, CssBaseline } from "@mui/material";
-import theme from "../lib/theme";
+import { CssBaseline } from "@mui/material";
+import { AppThemeProvider } from "../lib/ThemeContext";
 import { ReactNode } from "react";
 
 export default function MuiThemeProvider({ children }: { children: ReactNode }) {
     return (
-        <ThemeProvider theme={theme}>
+        <AppThemeProvider>
             <CssBaseline />
             {children}
-        </ThemeProvider>
+        </AppThemeProvider>
     );
 }

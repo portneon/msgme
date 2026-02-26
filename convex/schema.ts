@@ -15,13 +15,12 @@ export default defineSchema({
 
     // A direct message conversation between exactly two users
     conversations: defineTable({
-        workspaceId: v.optional(v.id("workspaces")),
         participant1: v.id("users"),
         participant2: v.id("users"),
+        workspaceId: v.optional(v.id("workspaces")),
         lastMessageId: v.optional(v.id("messages")),
         hiddenFor: v.optional(v.array(v.id("users"))),
     })
-        .index("by_workspaceId", ["workspaceId"])
         .index("by_participant1", ["participant1"])
         .index("by_participant2", ["participant2"]),
 

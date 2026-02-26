@@ -19,18 +19,28 @@ import {
     DialogContentText,
     DialogActions,
     Button,
+    Menu,
+    MenuItem,
+    ListItemIcon,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import FolderSharedIcon from "@mui/icons-material/FolderShared";
+import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
 import AddIcon from "@mui/icons-material/Add";
 import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import PersonAddRoundedIcon from "@mui/icons-material/PersonAddRounded";
+import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
+import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import { useUser } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import AddMemberDialog from "./AddMemberDialog";
+import AddToBundleDialog from "./AddToBundleDialog";
 import type { Id } from "../convex/_generated/dataModel";
 import { useState } from "react";
+import { useThemeContext } from "../lib/ThemeContext";
 
 interface SidebarProps {
     currentUserId: Id<"users">;
@@ -70,16 +80,54 @@ export default function Sidebar({
         api.conversations.getMyConversations,
         activeWorkspaceId ? { workspaceId: activeWorkspaceId } : "skip"
     );
+    const workspaces = useQuery(api.workspaces.getMyWorkspaces);
+    const activeWorkspace = workspaces?.find(w => w._id === activeWorkspaceId);
+
     const clearConversation = useMutation(api.conversations.clearConversation);
+    const removeMemberById = useMutation(api.workspaces.removeMemberById);
+    const { mode, toggleColorMode } = useThemeContext();
 
     const [inviteOpen, setInviteOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [convToDelete, setConvToDelete] = useState<Id<"conversations"> | null>(null);
 
-    const handleDeleteClick = (e: React.MouseEvent, id: Id<"conversations">) => {
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+    const [actionConvId, setActionConvId] = useState<Id<"conversations"> | null>(null);
+    const [actionUserId, setActionUserId] = useState<Id<"users"> | null>(null);
+    const [addToBundleOpen, setAddToBundleOpen] = useState(false);
+
+    const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, convId: Id<"conversations">, userId?: Id<"users">) => {
         e.stopPropagation();
-        setConvToDelete(id);
+        setAnchorEl(e.currentTarget);
+        setActionConvId(convId);
+        if (userId) setActionUserId(userId);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+        setActionConvId(null);
+        // Do not reset actionUserId yet in case a dialog is opening
+    };
+
+    const handleDeleteClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setConvToDelete(actionConvId);
         setDeleteDialogOpen(true);
+        handleMenuClose();
+    };
+
+    const handleAddToBundleClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setAddToBundleOpen(true);
+        handleMenuClose();
+    };
+
+    const handleRemoveFromBundleClick = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (activeWorkspaceId && actionUserId) {
+            await removeMemberById({ workspaceId: activeWorkspaceId, userId: actionUserId });
+        }
+        handleMenuClose();
     };
 
     const handleConfirmDelete = async () => {
@@ -119,21 +167,28 @@ export default function Sidebar({
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                     <Box sx={{ position: "relative" }}>
                         <Avatar
-                            src={user?.imageUrl}
-                            sx={{ width: 38, height: 38, border: "2px solid", borderColor: "primary.main" }}
-                        />
+                            src={activeWorkspace?.imageUrl ?? undefined}
+                            sx={{ width: 38, height: 38, bgcolor: "primary.main", color: "primary.contrastText" }}
+                        >
+                            {activeWorkspace ? activeWorkspace.name[0]?.toUpperCase() : "..."}
+                        </Avatar>
                         {/* Online indicator for self */}
                         <Box
                             sx={{
                                 position: "absolute", bottom: 0, right: 0,
-                                width: 10, height: 10, bgcolor: "#22c55e",
+                                width: 10, height: 10, bgcolor: "success.main",
                                 borderRadius: "50%", border: "2px solid", borderColor: "background.paper",
                             }}
                         />
                     </Box>
-                    <Typography variant="subtitle1" fontWeight={700}>
-                        {user?.username ?? user?.firstName ?? "You"}
-                    </Typography>
+                    <Box sx={{ display: "flex", flexDirection: "column" }}>
+                        <Typography variant="subtitle1" fontWeight={700} sx={{ lineHeight: 1.2 }}>
+                            {activeWorkspace?.name ?? "..."}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            {user?.username ?? user?.firstName ?? "You"}
+                        </Typography>
+                    </Box>
                 </Box>
                 <Box sx={{ display: "flex", gap: 0.5 }}>
                     <Tooltip title="Invite to Bundle">
@@ -149,9 +204,18 @@ export default function Sidebar({
                         <IconButton
                             onClick={onOpenSearch}
                             size="small"
-                            sx={{ bgcolor: "primary.main", color: "#fff", "&:hover": { bgcolor: "primary.dark" } }}
+                            sx={{ bgcolor: "primary.main", color: "primary.contrastText", "&:hover": { bgcolor: "action.hover", color: "text.primary" } }}
                         >
                             <AddIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title={mode === "dark" ? "Light Mode" : "Dark Mode"}>
+                        <IconButton
+                            onClick={toggleColorMode}
+                            size="small"
+                            sx={{ color: "text.secondary", "&:hover": { color: "primary.main" } }}
+                        >
+                            {mode === "dark" ? <LightModeOutlinedIcon fontSize="small" /> : <DarkModeOutlinedIcon fontSize="small" />}
                         </IconButton>
                     </Tooltip>
                 </Box>
@@ -226,8 +290,8 @@ export default function Sidebar({
                                 mx: 1,
                                 mb: 0.5,
                                 "&.Mui-selected": {
-                                    bgcolor: "rgba(108,71,255,0.12)",
-                                    "&:hover": { bgcolor: "rgba(108,71,255,0.18)" },
+                                    bgcolor: "action.selected",
+                                    "&:hover": { bgcolor: "action.hover" },
                                 },
                                 "&:hover .delete-chat": { opacity: 1 },
                             }}
@@ -244,7 +308,7 @@ export default function Sidebar({
                                         <Box
                                             sx={{
                                                 position: "absolute", bottom: 1, right: 1,
-                                                width: 10, height: 10, bgcolor: "#22c55e",
+                                                width: 10, height: 10, bgcolor: "success.main",
                                                 borderRadius: "50%", border: "2px solid",
                                                 borderColor: "background.paper",
                                             }}
@@ -286,15 +350,15 @@ export default function Sidebar({
                                     <IconButton
                                         className="delete-chat"
                                         size="small"
-                                        onClick={(e) => handleDeleteClick(e, conv._id)}
+                                        onClick={(e) => handleMenuOpen(e, conv._id, conv.otherUser?._id)}
                                         sx={{
                                             opacity: 0,
                                             transition: "opacity 0.2s",
                                             color: "text.secondary",
-                                            "&:hover": { color: "error.main" },
+                                            "&:hover": { color: "text.primary", bgcolor: "action.hover" },
                                         }}
                                     >
-                                        <DeleteRoundedIcon fontSize="inherit" />
+                                        <MoreVertIcon fontSize="inherit" />
                                     </IconButton>
                                 )}
                             </Box>
@@ -335,6 +399,38 @@ export default function Sidebar({
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                onClick={(e) => e.stopPropagation()}
+                PaperProps={{
+                    sx: { bgcolor: "background.paper", borderRadius: 2, minWidth: 180, backgroundImage: "none" }
+                }}
+            >
+                <MenuItem onClick={handleAddToBundleClick}>
+                    <ListItemIcon><FolderSharedIcon fontSize="small" /></ListItemIcon>
+                    <ListItemText primary="Add to Bundle" />
+                </MenuItem>
+                {activeWorkspaceId && (
+                    <MenuItem onClick={handleRemoveFromBundleClick}>
+                        <ListItemIcon><PersonRemoveIcon fontSize="small" /></ListItemIcon>
+                        <ListItemText primary="Remove from Bundle" />
+                    </MenuItem>
+                )}
+                <MenuItem onClick={handleDeleteClick} sx={{ color: "error.main" }}>
+                    <ListItemIcon><DeleteRoundedIcon fontSize="small" color="error" /></ListItemIcon>
+                    <ListItemText primary="Delete Chat" />
+                </MenuItem>
+            </Menu>
+
+            <AddToBundleDialog
+                open={addToBundleOpen}
+                onClose={() => setAddToBundleOpen(false)}
+                userIdToAdd={actionUserId}
+                currentWorkspaceId={activeWorkspaceId}
+            />
         </Box>
     );
 }

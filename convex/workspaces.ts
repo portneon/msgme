@@ -19,11 +19,7 @@ export const createWorkspace = mutation({
             imageUrl: args.imageUrl,
         });
 
-        await ctx.db.insert("workspaceMembers", {
-            workspaceId,
-            userId: me._id,
-            role: "admin",
-        });
+
 
         return workspaceId;
     },
@@ -41,16 +37,12 @@ export const getMyWorkspaces = query({
             .unique();
         if (!me) return [];
 
-        const memberships = await ctx.db
-            .query("workspaceMembers")
-            .withIndex("by_userId", (q) => q.eq("userId", me._id))
+        const workspaces = await ctx.db
+            .query("workspaces")
+            .withIndex("by_adminId", (q) => q.eq("adminId", me._id))
             .collect();
 
-        const workspaces = await Promise.all(
-            memberships.map((m) => ctx.db.get(m.workspaceId))
-        );
-
-        return workspaces.filter((w) => w !== null);
+        return workspaces;
     },
 });
 
@@ -66,14 +58,9 @@ export const addMember = mutation({
             .unique();
         if (!me) throw new Error("User not found");
 
-        // Check if I'm an admin of this workspace
-        const myMembership = await ctx.db
-            .query("workspaceMembers")
-            .withIndex("by_workspace_user", (q) =>
-                q.eq("workspaceId", args.workspaceId).eq("userId", me._id)
-            )
-            .unique();
-        if (myMembership?.role !== "admin") throw new Error("Unauthorized");
+        // Check if I'm the owner of this workspace
+        const workspace = await ctx.db.get(args.workspaceId);
+        if (!workspace || workspace.adminId !== me._id) throw new Error("Unauthorized");
 
         const userToAdd = await ctx.db
             .query("users")
@@ -110,14 +97,9 @@ export const getWorkspaceMembers = query({
             .unique();
         if (!me) return [];
 
-        // Check if I am a member
-        const myMembership = await ctx.db
-            .query("workspaceMembers")
-            .withIndex("by_workspace_user", (q) =>
-                q.eq("workspaceId", args.workspaceId).eq("userId", me._id)
-            )
-            .unique();
-        if (!myMembership) throw new Error("Not a member of this workspace");
+        // Check if I am the owner
+        const workspace = await ctx.db.get(args.workspaceId);
+        if (!workspace || workspace.adminId !== me._id) throw new Error("Unauthorized");
 
         const memberships = await ctx.db
             .query("workspaceMembers")
@@ -129,5 +111,70 @@ export const getWorkspaceMembers = query({
         );
 
         return users.filter((u) => u !== null);
+    },
+});
+
+export const addMemberById = mutation({
+    args: { workspaceId: v.id("workspaces"), userId: v.id("users") },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) throw new Error("Not authenticated");
+
+        const me = await ctx.db
+            .query("users")
+            .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+            .unique();
+        if (!me) throw new Error("User not found");
+
+        // Check if I'm the owner of this workspace
+        const workspace = await ctx.db.get(args.workspaceId);
+        if (!workspace || workspace.adminId !== me._id) throw new Error("Unauthorized");
+
+        const userToAdd = await ctx.db.get(args.userId);
+        if (!userToAdd) throw new Error("User not found");
+
+        // Check if already a member
+        const existing = await ctx.db
+            .query("workspaceMembers")
+            .withIndex("by_workspace_user", (q) =>
+                q.eq("workspaceId", args.workspaceId).eq("userId", userToAdd._id)
+            )
+            .unique();
+        if (existing) return existing._id;
+
+        return await ctx.db.insert("workspaceMembers", {
+            workspaceId: args.workspaceId,
+            userId: userToAdd._id,
+            role: "member", // Role is fixed to 'member' for those added
+        });
+    },
+});
+
+export const removeMemberById = mutation({
+    args: { workspaceId: v.id("workspaces"), userId: v.id("users") },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) throw new Error("Not authenticated");
+
+        const me = await ctx.db
+            .query("users")
+            .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+            .unique();
+        if (!me) throw new Error("User not found");
+
+        // Check if I'm the owner of this workspace
+        const workspace = await ctx.db.get(args.workspaceId);
+        if (!workspace || workspace.adminId !== me._id) throw new Error("Unauthorized");
+
+        const existing = await ctx.db
+            .query("workspaceMembers")
+            .withIndex("by_workspace_user", (q) =>
+                q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
+            )
+            .unique();
+
+        if (existing) {
+            await ctx.db.delete(existing._id);
+        }
     },
 });

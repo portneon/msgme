@@ -34,7 +34,7 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
     const typingUsers = useQuery(api.typing.getTypingUsers, { conversationId });
 
     // Get the other user from conversation list
-    const conversations = useQuery(api.conversations.getMyConversations);
+    const conversations = useQuery(api.conversations.getMyConversations, {});
     const conv = conversations?.find((c) => c._id === conversationId);
     const otherUser = conv?.otherUser;
 
@@ -151,7 +151,7 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
                             <Box
                                 sx={{
                                     position: "absolute", bottom: 1, right: 1,
-                                    width: 10, height: 10, bgcolor: "#22c55e",
+                                    width: 10, height: 10, bgcolor: "success.main",
                                     borderRadius: "50%", border: "2px solid", borderColor: "background.paper",
                                 }}
                             />
@@ -162,7 +162,7 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
                             {otherUser?.username ?? "Loading…"}
                             {otherUser?._id === currentUserId && " (You)"}
                         </Typography>
-                        <Typography variant="caption" color={otherUser?.isOnline ? "#22c55e" : "text.secondary"}>
+                        <Typography variant="caption" color={otherUser?.isOnline ? "success.main" : "text.secondary"}>
                             {otherUser?.isOnline ? "Online" : "Offline"}
                         </Typography>
                     </Box>
@@ -180,7 +180,7 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
                         display: "flex", flexDirection: "column", gap: 0.5,
                         bgcolor: "background.default",
                         "&::-webkit-scrollbar": { width: 4 },
-                        "&::-webkit-scrollbar-thumb": { bgcolor: "rgba(255,255,255,0.1)", borderRadius: 999 },
+                        "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: 999 },
                     }}
                 >
                     {/* Loading state */}
@@ -193,7 +193,7 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
                     {/* Empty state */}
                     {messages?.length === 0 && (
                         <Box sx={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, py: 8 }}>
-                            <ChatBubbleOutlineRoundedIcon sx={{ fontSize: 56, color: "primary.main", opacity: 0.4 }} />
+                            <ChatBubbleOutlineRoundedIcon sx={{ fontSize: 56, color: "text.primary", opacity: 0.4 }} />
                             <Typography variant="h6" color="text.secondary" fontWeight={600}>
                                 No messages yet
                             </Typography>
@@ -262,7 +262,7 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
                             sx={{
                                 width: 40,
                                 height: 40,
-                                boxShadow: "0 4px 16px rgba(108,71,255,0.4)",
+                                boxShadow: 3,
                             }}
                         >
                             <KeyboardArrowDownIcon />

@@ -57,7 +57,7 @@ export default function UserSearchDialog({
     async function handleSelect(otherUserId: Id<"users">) {
         if (!activeWorkspaceId) return;
         // getOrCreateConversation no longer needs myUserId from client
-        const convId = await getOrCreate({ otherUserId, workspaceId: activeWorkspaceId });
+        const convId = await getOrCreate({ otherUserId });
         onConversationCreated(convId);
         onClose();
         setSearch("");
@@ -112,7 +112,7 @@ export default function UserSearchDialog({
                                 secondaryTypographyProps={{ variant: "caption", color: "text.secondary" }}
                             />
                             {user.isOnline && (
-                                <Box sx={{ width: 8, height: 8, bgcolor: "#22c55e", borderRadius: "50%", ml: 1 }} />
+                                <Box sx={{ width: 8, height: 8, bgcolor: "success.main", borderRadius: "50%", ml: 1 }} />
                             )}
                         </ListItemButton>
                     ))}

@@ -157,9 +157,10 @@ export default function ChatLayout({ currentUserId }: ChatLayoutProps) {
                                 fontWeight: 700,
                                 px: 4,
                                 py: 1.2,
-                                background: "linear-gradient(135deg, #6c47ff 0%, #9b7fff 100%)",
-                                boxShadow: "0 4px 12px rgba(108,71,255,0.3)",
-                                "&:hover": { background: "linear-gradient(135deg, #5535e0 0%, #8a6ef0 100%)" },
+                                background: "primary.main",
+                                color: "primary.contrastText",
+                                boxShadow: 3,
+                                "&:hover": { bgcolor: "action.hover", color: "text.primary" },
                             }}
                         >
                             {hasConversations ? "New Conversation" : "Add Person"}
