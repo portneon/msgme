@@ -190,7 +190,16 @@ export default function MessageBubble({
                             <img
                                 src={content}
                                 alt="shared"
-                                style={{ maxWidth: "100%", borderRadius: 8, cursor: "pointer", display: "block" }}
+                                style={{
+                                    maxWidth: "100%",
+                                    maxHeight: "300px",
+                                    width: "auto",
+                                    height: "auto",
+                                    objectFit: "contain",
+                                    borderRadius: 8,
+                                    cursor: "pointer",
+                                    display: "block"
+                                }}
                             />
                         </Link>
                     ) : type === "file" ? (
@@ -250,8 +259,8 @@ export default function MessageBubble({
                     sx: {
                         bgcolor: "background.paper",
                         backgroundImage: "none",
-                        boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
-                        borderRadius: 2,
+                        boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+                        borderRadius: 3,
                         minWidth: 150,
                     },
                 }}

@@ -45,21 +45,27 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
             palette: {
                 mode,
                 primary: {
-                    main: isDark ? "#ffffff" : "#000000",
+                    main: isDark ? "#ffffff" : "#2563eb", // vibrant blue for light mode primary
+                    light: isDark ? "#cccccc" : "#60a5fa",
+                    dark: isDark ? "#999999" : "#1d4ed8",
                     contrastText: isDark ? "#000000" : "#ffffff",
                 },
+                secondary: {
+                    main: isDark ? "#a1a1aa" : "#64748b",
+                    contrastText: "#ffffff",
+                },
                 background: {
-                    default: isDark ? "#000000" : "#ffffff",
-                    paper: isDark ? "#111111" : "#f5f5f5",
+                    default: isDark ? "#000000" : "#f8fafc", // off-white/gray background for light mode
+                    paper: isDark ? "#111111" : "#ffffff", // clean white panels
                 },
                 text: {
-                    primary: isDark ? "#ffffff" : "#000000",
-                    secondary: isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.6)",
+                    primary: isDark ? "#ffffff" : "#0f172a", // deep slate for crisp text
+                    secondary: isDark ? "rgba(255,255,255,0.7)" : "#475569", // slate gray for secondary 
                 },
-                divider: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+                divider: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)", // softer dividers in light mode
                 action: {
-                    hover: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
-                    selected: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
+                    hover: isDark ? "rgba(255,255,255,0.05)" : "rgba(15, 23, 42, 0.04)",
+                    selected: isDark ? "rgba(255,255,255,0.1)" : "rgba(15, 23, 42, 0.08)",
                 }
             },
             typography: {
@@ -71,12 +77,13 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
             components: {
                 MuiButton: {
                     styleOverrides: {
-                        root: { textTransform: "none", borderRadius: 8 },
-                        contained: {
-                            backgroundColor: isDark ? "#ffffff" : "#000000",
+                        root: { textTransform: "none", borderRadius: 8, fontWeight: 600 },
+                        containedPrimary: {
+                            backgroundColor: isDark ? "#ffffff" : "#2563eb",
                             color: isDark ? "#000000" : "#ffffff",
                             "&:hover": {
-                                backgroundColor: isDark ? "#e0e0e0" : "#333333",
+                                backgroundColor: isDark ? "#e0e0e0" : "#1d4ed8",
+                                boxShadow: "0 4px 12px rgba(37, 99, 235, 0.2)",
                             }
                         }
                     },
@@ -115,7 +122,7 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
         });
     }, [mode]);
 
-  
+
     if (!mounted) {
         return <div style={{ visibility: "hidden" }}>{children}</div>;
     }

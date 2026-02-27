@@ -42,10 +42,9 @@ export const upsertUser = mutation({
             .unique();
 
         if (existing) {
+            // Only update isOnline. We do not overwrite username or imageUrl 
+            // from Clerk because they might have a custom one.
             await ctx.db.patch(existing._id, {
-                username: args.username,
-                email: args.email,
-                imageUrl: args.imageUrl,
                 isOnline: true,
             });
         }
@@ -93,5 +92,97 @@ export const setOffline = mutation({
         if (user) {
             await ctx.db.patch(user._id, { isOnline: false });
         }
+    },
+});
+
+// Update the authenticated user's profile
+export const updateProfile = mutation({
+    args: {
+        customUsername: v.optional(v.string()),
+        customImageUrl: v.optional(v.string()),
+        imageId: v.optional(v.id("_storage")),
+        bio: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) throw new Error("Not authenticated");
+
+        const user = await ctx.db
+            .query("users")
+            .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+            .unique();
+
+        if (!user) throw new Error("User not found");
+
+        const updates: any = {};
+        if (args.customUsername !== undefined) updates.customUsername = args.customUsername;
+        if (args.customImageUrl !== undefined) updates.customImageUrl = args.customImageUrl;
+        if (args.bio !== undefined) updates.bio = args.bio;
+
+        if (args.imageId) {
+            const url = await ctx.storage.getUrl(args.imageId);
+            if (url) {
+                updates.customImageUrl = url;
+            }
+        }
+
+        await ctx.db.patch(user._id, updates);
+    },
+});
+
+// Set a custom alias for another user
+export const setContactAlias = mutation({
+    args: {
+        contactUserId: v.id("users"),
+        alias: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) throw new Error("Not authenticated");
+
+        const user = await ctx.db
+            .query("users")
+            .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+            .unique();
+
+        if (!user) throw new Error("User not found");
+
+        const existingContact = await ctx.db
+            .query("contacts")
+            .withIndex("by_owner_contact", (q) =>
+                q.eq("ownerId", user._id).eq("contactUserId", args.contactUserId)
+            )
+            .unique();
+
+        if (existingContact) {
+            await ctx.db.patch(existingContact._id, { alias: args.alias });
+        } else {
+            await ctx.db.insert("contacts", {
+                ownerId: user._id,
+                contactUserId: args.contactUserId,
+                alias: args.alias,
+            });
+        }
+    },
+});
+
+// Get aliases set by the current user
+export const getMyContacts = query({
+    args: {},
+    handler: async (ctx) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) return [];
+
+        const user = await ctx.db
+            .query("users")
+            .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+            .unique();
+
+        if (!user) return [];
+
+        return await ctx.db
+            .query("contacts")
+            .withIndex("by_owner", (q) => q.eq("ownerId", user._id))
+            .collect();
     },
 });

@@ -9,9 +9,22 @@ export default defineSchema({
         email: v.string(),
         imageUrl: v.optional(v.string()),
         isOnline: v.boolean(),
+        // Custom profile fields
+        customUsername: v.optional(v.string()),
+        customImageUrl: v.optional(v.string()),
+        bio: v.optional(v.string()),
     })
         .index("by_clerkId", ["clerkId"])
         .index("by_email", ["email"]),
+
+    // Contact aliases (custom names for other users)
+    contacts: defineTable({
+        ownerId: v.id("users"),
+        contactUserId: v.id("users"),
+        alias: v.string(),
+    })
+        .index("by_owner", ["ownerId"])
+        .index("by_owner_contact", ["ownerId", "contactUserId"]),
 
     // A direct message conversation between exactly two users
     conversations: defineTable({

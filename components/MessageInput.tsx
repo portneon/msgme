@@ -8,6 +8,7 @@ import SentimentSatisfiedOutlinedIcon from "@mui/icons-material/SentimentSatisfi
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { useTheme } from "@mui/material/styles";
 import { useMutation } from "convex/react";
+import browserImageCompression from "browser-image-compression";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 
@@ -66,11 +67,22 @@ export default function MessageInput({ onSend, disabled, conversationId }: Messa
     };
 
     const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
+        let file = e.target.files?.[0];
         if (!file) return;
 
         setIsUploading(true);
         try {
+            // Compress image if it's an image file
+            const isImage = file.type.startsWith("image/");
+            if (isImage) {
+                const options = {
+                    maxSizeMB: 1,          // MAX 1 MB
+                    maxWidthOrHeight: 1280, // MAX 1280px
+                    useWebWorker: true,
+                };
+                file = await browserImageCompression(file, options);
+            }
+
             // 1. Get a short-lived upload URL
             const postUrl = await generateUploadUrl();
 
@@ -83,13 +95,14 @@ export default function MessageInput({ onSend, disabled, conversationId }: Messa
             const { storageId } = await result.json();
 
             // 3. Send the message
-            const type = file.type.startsWith("image/") ? "image" : "file";
+            const type = isImage ? "image" : "file";
             onSend(file.name, type, storageId);
 
             // Clear input
             e.target.value = "";
         } catch (error) {
             console.error("Upload failed", error);
+            // Could add an alert or toast here for user feedback
         } finally {
             setIsUploading(false);
         }

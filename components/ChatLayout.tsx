@@ -157,10 +157,10 @@ export default function ChatLayout({ currentUserId }: ChatLayoutProps) {
                                 fontWeight: 700,
                                 px: 4,
                                 py: 1.2,
-                                background: "primary.main",
                                 color: "primary.contrastText",
-                                boxShadow: 3,
-                                "&:hover": { bgcolor: "action.hover", color: "text.primary" },
+                                boxShadow: theme.palette.mode === "dark"
+                                    ? 3
+                                    : "0 4px 14px 0 rgba(37, 99, 235, 0.39)",
                             }}
                         >
                             {hasConversations ? "New Conversation" : "Add Person"}

@@ -108,7 +108,17 @@ export const getMyConversations = query({
                     (!receipt || m._creationTime > receipt.lastReadAt)
                 ).length;
 
-                return { ...conv, otherUser, lastMessage, unreadCount };
+                // Fetch contact alias
+                const contact = await ctx.db
+                    .query("contacts")
+                    .withIndex("by_owner_contact", (q) =>
+                        q.eq("ownerId", me._id).eq("contactUserId", otherUser!._id)
+                    )
+                    .unique();
+
+                const contactAlias = contact?.alias;
+
+                return { ...conv, otherUser, contactAlias, lastMessage, unreadCount };
             })
         );
 
@@ -240,6 +250,13 @@ export const getConversation = query({
         const otherId = conv.participant1 === me._id ? conv.participant2 : conv.participant1;
         const otherUser = await ctx.db.get(otherId);
 
-        return { ...conv, otherUser };
+        const contact = await ctx.db
+            .query("contacts")
+            .withIndex("by_owner_contact", (q) =>
+                q.eq("ownerId", me._id).eq("contactUserId", otherId)
+            )
+            .unique();
+
+        return { ...conv, otherUser, contactAlias: contact?.alias };
     }
 });

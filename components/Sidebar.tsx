@@ -79,6 +79,7 @@ export default function Sidebar({
     );
     const workspaces = useQuery(api.workspaces.getMyWorkspaces);
     const activeWorkspace = workspaces?.find(w => w._id === activeWorkspaceId);
+    const dbUser = useQuery(api.users.getCurrentUser);
 
     const clearConversation = useMutation(api.conversations.clearConversation);
     const removeMemberById = useMutation(api.workspaces.removeMemberById);
@@ -131,7 +132,7 @@ export default function Sidebar({
             await clearConversation({ conversationId: convToDelete });
             setDeleteDialogOpen(false);
             setConvToDelete(null);
-            
+
         }
     };
 
@@ -162,11 +163,9 @@ export default function Sidebar({
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                     <Box sx={{ position: "relative" }}>
                         <Avatar
-                            src={activeWorkspace?.imageUrl ?? undefined}
-                            sx={{ width: 38, height: 38, bgcolor: "primary.main", color: "primary.contrastText" }}
-                        >
-                            {activeWorkspace ? activeWorkspace.name[0]?.toUpperCase() : "..."}
-                        </Avatar>
+                            src={dbUser?.customImageUrl ?? user?.imageUrl ?? undefined}
+                            sx={{ width: 38, height: 38 }}
+                        />
                         <Box
                             sx={{
                                 position: "absolute", bottom: 0, right: 0,
@@ -175,14 +174,9 @@ export default function Sidebar({
                             }}
                         />
                     </Box>
-                    <Box sx={{ display: "flex", flexDirection: "column" }}>
-                        <Typography variant="subtitle1" fontWeight={700} sx={{ lineHeight: 1.2 }}>
-                            {activeWorkspace?.name ?? "..."}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                            {user?.username ?? user?.firstName ?? "You"}
-                        </Typography>
-                    </Box>
+                    <Typography variant="subtitle1" fontWeight={700}>
+                        {dbUser?.customUsername ?? user?.username ?? user?.firstName ?? "You"}
+                    </Typography>
                 </Box>
                 <Box sx={{ display: "flex", gap: 0.5 }}>
                     <Tooltip title="Invite to Bundle">
@@ -302,7 +296,7 @@ export default function Sidebar({
                                 </Box>
                             </ListItemAvatar>
                             <ListItemText
-                                primary={`${conv.otherUser?.username ?? "Unknown"}${conv.otherUser?._id === currentUserId ? " (You)" : ""}`}
+                                primary={`${conv.contactAlias ?? conv.otherUser?.customUsername ?? conv.otherUser?.username ?? "Unknown"}${conv.otherUser?._id === currentUserId ? " (You)" : ""}`}
                                 primaryTypographyProps={{ variant: "body1", fontWeight: unread > 0 ? 700 : 600, noWrap: true }}
                                 secondary={conv.lastMessage?.content ?? "No messages yet"}
                                 secondaryTypographyProps={{

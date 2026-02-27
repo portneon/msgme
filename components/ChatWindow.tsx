@@ -20,6 +20,7 @@ import type { Id } from "../convex/_generated/dataModel";
 import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
 import TypingIndicator from "./TypingIndicator";
+import ContactInfoDialog from "./ContactInfoDialog";
 
 interface ChatWindowProps {
     conversationId: Id<"conversations">;
@@ -42,6 +43,7 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
     const isAtBottomRef = useRef(true);
     const prevMessageCountRef = useRef(0);
     const [showNewMsgButton, setShowNewMsgButton] = useState(false);
+    const [contactInfoOpen, setContactInfoOpen] = useState(false);
 
     // Mark conversation as read when opened
     useEffect(() => {
@@ -142,9 +144,15 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
                             <ArrowBackIcon />
                         </IconButton>
                     )}
-                    <Box sx={{ position: "relative" }}>
-                        <Avatar src={otherUser?.imageUrl ?? undefined} sx={{ width: 40, height: 40 }}>
-                            {otherUser?.username?.[0]?.toUpperCase()}
+                    <Box
+                        sx={{ position: "relative", cursor: "pointer" }}
+                        onClick={() => setContactInfoOpen(true)}
+                    >
+                        <Avatar
+                            src={otherUser?.customImageUrl ?? otherUser?.imageUrl ?? undefined}
+                            sx={{ width: 40, height: 40 }}
+                        >
+                            {(conv?.contactAlias || otherUser?.customUsername || otherUser?.username)?.[0]?.toUpperCase()}
                         </Avatar>
                         {otherUser?.isOnline && (
                             <Box
@@ -156,9 +164,9 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
                             />
                         )}
                     </Box>
-                    <Box>
+                    <Box sx={{ cursor: "pointer" }} onClick={() => setContactInfoOpen(true)}>
                         <Typography variant="subtitle1" fontWeight={700}>
-                            {otherUser?.username ?? "Loading…"}
+                            {conv?.contactAlias || otherUser?.customUsername || otherUser?.username || "Loading…"}
                             {otherUser?._id === currentUserId && " (You)"}
                         </Typography>
                         <Typography variant="caption" color={otherUser?.isOnline ? "success.main" : "text.secondary"}>
@@ -272,6 +280,13 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
             </Box>
 
             <MessageInput onSend={handleSend} conversationId={conversationId} />
+
+            <ContactInfoDialog
+                open={contactInfoOpen}
+                onClose={() => setContactInfoOpen(false)}
+                contactUserId={otherUser?._id ?? null}
+                initialAlias={conv?.contactAlias}
+            />
         </Box>
     );
 }

@@ -37,7 +37,6 @@ export default function AddToBundleDialog({ open, onClose, userIdToAdd, currentW
         setLoading(true);
         try {
             await addMemberById({ workspaceId, userId: userIdToAdd });
-            alert('member added Suceesfully')
 
             onClose();
         } catch (error) {

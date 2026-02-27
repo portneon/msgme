@@ -4,11 +4,13 @@ import { Box, IconButton, Tooltip, Avatar, Popover, TextField, Button, Typograph
 import AddIcon from "@mui/icons-material/Add";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useState } from "react";
 import type { Id } from "../convex/_generated/dataModel";
 import { useThemeContext } from "../lib/ThemeContext";
+import ProfileDialog from "./ProfileDialog";
 
 interface WorkspaceSidebarProps {
     activeWorkspaceId: Id<"workspaces"> | null;
@@ -21,6 +23,7 @@ export default function WorkspaceSidebar({ activeWorkspaceId, onSelectWorkspace 
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
     const [newName, setNewName] = useState("");
     const { mode, toggleColorMode } = useThemeContext();
+    const [profileOpen, setProfileOpen] = useState(false);
 
     const handleOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -54,8 +57,21 @@ export default function WorkspaceSidebar({ activeWorkspaceId, onSelectWorkspace 
                 flexShrink: 0,
             }}
         >
-            {/* Workspaces List */}
-            <Box sx={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, overflowY: "auto", width: "100%" }}>
+            {/* Workspaces List (Scrollable) */}
+            <Box
+                sx={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 2,
+                    overflowY: "auto",
+                    width: "100%",
+                    "&::-webkit-scrollbar": { display: "none" }, // optional: hide scrollbar for cleaner look
+                    msOverflowStyle: "none",
+                    scrollbarWidth: "none",
+                }}
+            >
                 {workspaces?.map((ws) => (
                     <Tooltip key={ws._id} title={ws.name} placement="right">
                         <IconButton
@@ -82,7 +98,10 @@ export default function WorkspaceSidebar({ activeWorkspaceId, onSelectWorkspace 
                         </IconButton>
                     </Tooltip>
                 ))}
+            </Box>
 
+            {/* Fixed Bottom Actions */}
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, width: "100%", mt: "auto" }}>
                 <Divider sx={{ width: "60%", borderColor: "divider" }} />
 
                 <Tooltip title="Create Bundle" placement="right">
@@ -100,12 +119,10 @@ export default function WorkspaceSidebar({ activeWorkspaceId, onSelectWorkspace 
                     </IconButton>
                 </Tooltip>
 
-                <Box sx={{ flexGrow: 1 }} />
-
-                {/* Theme Toggle Button */}
-                <Tooltip title={mode === "dark" ? "Light Mode" : "Dark Mode"} placement="right">
+                {/* Settings Toggle Button */}
+                <Tooltip title="Settings" placement="right">
                     <IconButton
-                        onClick={toggleColorMode}
+                        onClick={() => setProfileOpen(true)}
                         sx={{
                             width: 48,
                             height: 48,
@@ -114,7 +131,7 @@ export default function WorkspaceSidebar({ activeWorkspaceId, onSelectWorkspace 
                             "&:hover": { bgcolor: "action.hover", color: "text.primary" },
                         }}
                     >
-                        {mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
+                        <SettingsOutlinedIcon />
                     </IconButton>
                 </Tooltip>
             </Box>
@@ -143,6 +160,8 @@ export default function WorkspaceSidebar({ activeWorkspaceId, onSelectWorkspace 
                     <Button onClick={handleCreate} variant="contained" size="small" sx={{ borderRadius: 2 }}>Create</Button>
                 </Box>
             </Popover>
+
+            <ProfileDialog open={profileOpen} onClose={() => setProfileOpen(false)} />
         </Box>
     );
 }
