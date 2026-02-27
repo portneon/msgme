@@ -131,8 +131,7 @@ export default function Sidebar({
             await clearConversation({ conversationId: convToDelete });
             setDeleteDialogOpen(false);
             setConvToDelete(null);
-            // If the active conversation was deleted, we might want to tell the parent to clear selection
-            // but for now getMyConversations will filter it out.
+            
         }
     };
 

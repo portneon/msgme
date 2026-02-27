@@ -250,7 +250,8 @@ export default function ChatWindow({ conversationId, currentUserId, onBack }: Ch
                         sx={{
                             position: "absolute",
                             bottom: 16,
-                            right: 16,
+                            left: "50%",
+                            transform: "translateX(-50%)",
                             zIndex: 10,
                         }}
                     >

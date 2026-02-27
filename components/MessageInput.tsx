@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useRef, KeyboardEvent, useCallback, ChangeEvent } from "react";
-import { Box, TextField, IconButton, Paper, CircularProgress } from "@mui/material";
+import { Box, TextField, IconButton, Paper, CircularProgress, Popover } from "@mui/material";
 import SendRoundedIcon from "@mui/icons-material/SendRounded";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
+import SentimentSatisfiedOutlinedIcon from "@mui/icons-material/SentimentSatisfiedOutlined";
+import EmojiPicker, { Theme } from "emoji-picker-react";
+import { useTheme } from "@mui/material/styles";
 import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
@@ -17,9 +20,14 @@ interface MessageInputProps {
 export default function MessageInput({ onSend, disabled, conversationId }: MessageInputProps) {
     const [text, setText] = useState("");
     const [isUploading, setIsUploading] = useState(false);
+    const [emojiAnchorEl, setEmojiAnchorEl] = useState<HTMLElement | null>(null);
+    const emojiPopoverOpen = Boolean(emojiAnchorEl);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isTypingRef = useRef(false);
+
+    const theme = useTheme();
 
     const setTyping = useMutation(api.typing.setTyping);
     const clearTyping = useMutation(api.typing.clearTyping);
@@ -104,6 +112,18 @@ export default function MessageInput({ onSend, disabled, conversationId }: Messa
         }
     }
 
+    const handleEmojiClick = (event: React.MouseEvent<HTMLElement>) => {
+        setEmojiAnchorEl(event.currentTarget);
+    };
+
+    const handleEmojiClose = () => {
+        setEmojiAnchorEl(null);
+    };
+
+    const onEmojiClick = (emojiObject: any) => {
+        handleChange(text + emojiObject.emoji);
+    };
+
     return (
         <Paper
             elevation={0}
@@ -134,6 +154,14 @@ export default function MessageInput({ onSend, disabled, conversationId }: Messa
                     ) : (
                         <AttachFileIcon fontSize="small" />
                     )}
+                </IconButton>
+                <IconButton
+                    size="small"
+                    sx={{ color: "text.secondary", mb: 0.5 }}
+                    onClick={handleEmojiClick}
+                    disabled={disabled || isUploading}
+                >
+                    <SentimentSatisfiedOutlinedIcon fontSize="small" />
                 </IconButton>
                 <TextField
                     fullWidth
@@ -170,6 +198,31 @@ export default function MessageInput({ onSend, disabled, conversationId }: Messa
                     <SendRoundedIcon fontSize="small" />
                 </IconButton>
             </Box>
+
+            <Popover
+                open={emojiPopoverOpen}
+                anchorEl={emojiAnchorEl}
+                onClose={handleEmojiClose}
+                anchorOrigin={{
+                    vertical: "top",
+                    horizontal: "left",
+                }}
+                transformOrigin={{
+                    vertical: "bottom",
+                    horizontal: "left",
+                }}
+                slotProps={{
+                    paper: {
+                        sx: { mb: 1, borderRadius: 3 },
+                    },
+                }}
+            >
+                <EmojiPicker
+                    onEmojiClick={onEmojiClick}
+                    theme={theme.palette.mode === "dark" ? Theme.DARK : Theme.LIGHT}
+                    lazyLoadEmojis={true}
+                />
+            </Popover>
         </Paper>
     );
 }
